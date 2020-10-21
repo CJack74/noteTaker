@@ -1,15 +1,18 @@
 //Dependencies
 const express = require('express');
+const bodyParser= require("body-parser");
+const axios = require("axios");
 const path = require('path');
-const Note = require('./api/note')
+const fs = require("fs");
+const Note = require('./routes/htmlRoutes')
  
 //Sets up express
 const app = express();
-const PORT = 3000;
+const PORT = process.env || 3000;
 
 // Sets up the Express app to handle data parsing
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
 
 //Route for home page
 app.get('*', function (req, res) {
