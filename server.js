@@ -79,7 +79,7 @@ app.delete("/api/notes/:id", function (req, res) {
 
     // Starts the server to begin listening
     // =============================================================
-    app.listen(3000, function () {
+    app.listen(process.env.PORT, function () {
         console.log("NoteApp server is running at port 3000...")
     });
 
