@@ -1,11 +1,14 @@
 //Dependencies
 const express = require('express');
-const bodyParser= require("body-parser");
+const bodyParser = require("body-parser");
 const axios = require("axios");
 const path = require('path');
 const fs = require("fs");
-const Note = require('./routes/htmlRoutes')
- 
+const util = require("util")
+const uniqid = require("uniqid");
+
+
+
 //Sets up express
 const app = express();
 const PORT = process.env || 3000;
@@ -14,55 +17,70 @@ app.use(express.static('public'))
 // Sets up the Express app to handle data parsing
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
+// console.log(fs.readFile)
 
+//Sets Variables
+const writefileAsync = util.promisify(fs.writeFile);
+const readFileAsync =util.promisify(fs.readFile);
 
-// //Route for home page
-// app.get('*', function (req, res) {
-//     res.send('index.html');
-//   })
+let storedNotes;
 
-// //Route for notes
-// app.get('/notes.html', (req, res) => {
-//     res.send('notes.html');
-// })
+//For html Routes
+app.get("/", (req, res) => {
+    res.sendFile(path.join(__dirname, "/public/index.html"));
+});
 
-// //get our notes
-// app.get('/api/note', (req, res) => {
-//     if (notes.length === 0) {
-//         return res.json({ message: 'There are no notes!' })
-//     } else {
-//         return res.json(notes);
-//     }
-// });
+app.get("/notes", (req, res) => {
+    res.sendFile(path.join(__dirname, "/public/notes.html"));
+});
 
-//Add a note
+// Find all notes
+app.get("/api/notes", function (req, res) {
+    readFileAsync(path.join(__dirname, "./db/db.json"), "utf8")
+        .then(function(data) {
+            return res.json(JSON.parse(data))
+        })
+})
 
-// app.post('/api/note/new', (req, res) => {
-//     const id = notes.length + 1;
-//     const noteBody = req.body.note;
-//     const note = new Note(id, noteBody);
-//     notes.push(note);
-//     res.json(notes);
-//})
+// Creates new note
+app.post("/api/notes", function (req,res) {
+    var newNote = req.body;
+    var newId = uniqid();
+    newNote.id=newId;
 
-// Starts the server to begin listening
-// =============================================================
-app.listen(PORT, function () {
-    console.log('App listening on PORT ' + PORT);
+    fs.readFile("./db/db.json", (err, data) =>{
+        if(err) throw err;
+
+        let savedNotes = JSON.parse(data);
+        savedNotes.push(newNote);
+
+        fs.writeFile("./db/db.json", JSON.stringify(savedNotes), "utf8", err => {
+            if (err) throw(err);
+            console.log("saved to database")
+        })
+    })
+})
+
+// Deletes targeted note
+app.delete("/api/notes/:id", function (req, res) {
+    var id = req.params.id;
+    readFileAsync(path.join(__dirname, "./db/db.json"), "utf8")
+        .then(function (data) {
+            storedNotes = JSON.parse(data);
+            writefileAsync(path.join(__dirname, "./db/db.json"), JSON.stringify(storedNotes))
+                .then(function () {
+                    console.log("Deleted db.json");
+                })
+        });
+    res.json(id);
 });
 
 
-// // Create a new Note
-// app.post('/notes', notes.create);
 
-// // Retrieve all Notes
-// app.get('/notes', notes.findAll);
+    // Starts the server to begin listening
+    // =============================================================
+    app.listen(3000, function () {
+        console.log("NoteApp server is running at port 3000...")
+    });
 
-// // Retrieve a single Note with noteId
-// app.get('/notes/:noteId', notes.findOne);
 
-// // Update a Note with noteId
-// app.put('/notes/:noteId', notes.update);
-
-// // Delete a Note with noteId
-// app.delete('/notes/:noteId', notes.delete);
